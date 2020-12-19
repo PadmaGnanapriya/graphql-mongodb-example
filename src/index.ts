@@ -2,38 +2,31 @@ import {MongoClient, ObjectId} from 'mongodb'
 import * as express from 'express'
 import {graphqlExpress, graphiqlExpress} from 'graphql-server-express'
 import {makeExecutableSchema} from 'graphql-tools'
-import cors from 'cors'
 import * as bodyParser from "body-parser";
+// import cors from 'cors'
+// app.use(cors())
 
 const prepare = (o) => {
     o._id = o._id.toString()
     return o
 }
 
-
 const app = express()
-
-// app.use(cors())
-
 const homePath = '/graphiql'
 const URL = 'http://localhost'
 const PORT = 3500
 const MONGO_URL = 'mongodb://localhost:27017/cominglevel';
 
-
 // @ts-ignore
 const start = async () => {
-
     try {
         const db = await MongoClient.connect(MONGO_URL)
-
         const ProductsCollection = db.collection('products');
-
         const typeDefs = [`
           type Query {
-            getProduct(_id: String): Product
+            getProduct(title: String): Product
             getAllProducts: [Product]
-            getCategorizedProducts(_id: String): [Product]
+            getCategorizedProducts(cType: String): [Product]
           },
             
           type Product {
@@ -47,6 +40,7 @@ const start = async () => {
       
           type Mutation {
             addProduct(  title: String, sellPrice: Int, price: Int, image: String, cType: String, stockQty: Int): Product
+            deleteProduct(  title: String): String
           }
     
           schema {
@@ -57,21 +51,26 @@ const start = async () => {
 
         const resolvers = {
             Query: {
-                getProduct: async (root, {_id}) => {
-                    return prepare(await ProductsCollection.findOne(ObjectId(_id)))
+                getProduct: async (root, {title}) => {
+                    return prepare(await ProductsCollection.findOne({title: title}))
                 },
                 getAllProducts: async () => {
                     return (await ProductsCollection.find({}).toArray()).map(prepare)
                 },
-                getCategorizedProducts: async (root, {_id}) => {
-                    return prepare(await ProductsCollection.findOne(ObjectId(_id)))
+                getCategorizedProducts: async (root, {cType}) => {
+                    return (await ProductsCollection.find({cType: cType}).toArray()).map(prepare)
                 },
             },
-
 
             Mutation: {
                 addProduct: async (root, args, context, info) => {
                     const res = await ProductsCollection.insertOne(args)
+                    return prepare(res.ops[0])  // https://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#~insertOneWriteOpResult
+                },
+
+                //Todo: Implement
+                deleteProduct: async (root, args, context, info) => {
+                    const res = await ProductsCollection.remove(args)
                     return prepare(res.ops[0])  // https://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#~insertOneWriteOpResult
                 },
             },
@@ -108,6 +107,17 @@ query {
     cType
     stockQty
   } 
+}
+
+query{
+  getCategorizedProducts(cType:"Fruits") {
+    title
+    sellPrice
+    price
+    image
+    cType
+    stockQty
+  }
 }
 
 mutation {
