@@ -1,15 +1,19 @@
 import {MongoClient, ObjectId} from 'mongodb'
-import express from 'express'
-import bodyParser from 'body-parser'
+import * as express from 'express'
 import {graphqlExpress, graphiqlExpress} from 'graphql-server-express'
 import {makeExecutableSchema} from 'graphql-tools'
 import cors from 'cors'
-import {prepare} from "../util/index"
+import * as bodyParser from "body-parser";
+
+const prepare = (o) => {
+    o._id = o._id.toString()
+    return o
+}
 
 
 const app = express()
 
-app.use(cors())
+// app.use(cors())
 
 const homePath = '/graphiql'
 const URL = 'http://localhost'
@@ -17,7 +21,9 @@ const PORT = 3500
 const MONGO_URL = 'mongodb://localhost:27017/cominglevel';
 
 
-export const start = async () => {
+// @ts-ignore
+const start = async () => {
+
     try {
         const db = await MongoClient.connect(MONGO_URL)
 
@@ -76,13 +82,9 @@ export const start = async () => {
             resolvers
         })
 
-
         app.use('/graphql', bodyParser.json(), graphqlExpress({schema}))
 
-
-        app.use(homePath, graphiqlExpress({
-            endpointURL: '/graphql'
-        }))
+        app.use(homePath, graphiqlExpress({endpointURL: '/graphql'}))
 
         app.listen(PORT, () => {
             console.log(` Please click  ${URL}:${PORT}${homePath}`)
@@ -93,3 +95,4 @@ export const start = async () => {
     }
 
 }
+start().then(r => console.log("server is running"))
