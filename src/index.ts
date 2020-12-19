@@ -95,4 +95,29 @@ const start = async () => {
     }
 
 }
-start().then(r => console.log("server is running"))
+start().then(r =>
+console.log(`
+//Sample queries
+
+query {
+  getAllProducts {
+    title
+    sellPrice
+    price
+    image
+    cType
+    stockQty
+  } 
+}
+
+mutation {
+  addProduct(title: "Apple", sellPrice: 75, price: 70, image: "No image", cType: "Fruits", stockQty: 10) {
+    title
+    sellPrice
+    price
+    image
+    cType
+    stockQty
+  }
+}
+`));
