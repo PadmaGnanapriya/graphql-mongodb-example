@@ -1,4 +1,4 @@
-import {MongoClient, ObjectId} from 'mongodb'
+import {MongoClient} from 'mongodb'
 import * as express from 'express'
 import {graphqlExpress, graphiqlExpress} from 'graphql-server-express'
 import {makeExecutableSchema} from 'graphql-tools'
@@ -41,6 +41,7 @@ const start = async () => {
           type Mutation {
             addProduct(  title: String, sellPrice: Int, price: Int, image: String, cType: String, stockQty: Int): Product
             deleteProduct(  title: String): String
+            updateQtyOfProduct( title: String, stockQty: Int) :Product
           }
     
           schema {
@@ -68,11 +69,14 @@ const start = async () => {
                     return prepare(res.ops[0])  // https://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#~insertOneWriteOpResult
                 },
 
-                //Todo: Implement
                 deleteProduct: async (root, args, context, info) => {
                     const res = await ProductsCollection.remove(args)
-                    return prepare(res.ops[0])  // https://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#~insertOneWriteOpResult
+                    return prepare(res.ops[0])
                 },
+                updateQtyOfProduct: async  (root, args, context, info) => {
+                    const res = await ProductsCollection.update({title: args.title},{$set :{stockQty: args.stockQty}})
+                    return prepare(res.ops[0])
+                }
             },
         }
 
@@ -98,6 +102,17 @@ start().then(r =>
 console.log(`
 //Sample queries
 
+query{
+  getProduct(title: "Banana") {
+    title
+    sellPrice
+    price
+    image
+    cType
+    stockQty
+  }
+}
+
 query {
   getAllProducts {
     title
@@ -111,6 +126,21 @@ query {
 
 query{
   getCategorizedProducts(cType:"Fruits") {
+    title
+    sellPrice
+    price
+    image
+    cType
+    stockQty
+  }
+}
+
+mutation{
+   deleteProduct(title: "Onion")
+}
+
+mutation{
+  updateQtyOfProduct(title:"Mango", stockQty: 35) {
     title
     sellPrice
     price
